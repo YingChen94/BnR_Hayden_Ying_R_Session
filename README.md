@@ -1,5 +1,5 @@
-# R tutorial session for BnR group
+# We want to make a ding in your R universe. 
 
-Online R tutorial prepared by Hayden and Ying in Lougheed Lab at Queen's University in 2020.
+This is an online R tutorial prepared by Hayden and Ying in Lougheed Lab at Queen's University in 2020.
 
 Stay at home and do some learning.
