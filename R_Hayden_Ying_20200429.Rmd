@@ -1,0 +1,662 @@
+---
+title: "Hayden and Ying's R tutorial"
+author: "Hayden Wainwright and Ying Chen, Lougheed Lab, Queen's University"
+date: "04/30/2020"
+output:
+  html_document: default
+  fig_caption: default
+---
+
+<style type="text/css">
+h1.title {
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+```
+## Preface
+In <font size="4" color="red">2020</font>, a pandemic caused by the  <font size="4" color="blue">COVID-19</font> virus hit human society harshly, with <font size="4" color="dark blue">million </font> people infected and <font size="4" color="dark blue">thousands of</font> people dead. As simple country <font size="4" color="orange">biologists</font>, we are staying home at the behest of the Government of Canada, helping *Homo sapiens* maintain good physical and mental <font size="5" color="green">health</font>. While this disease is bad news for humans  <font size="5" color="green">nature</font> is getting a temporary break from human acitivties. 
+
+As the rock below reminds us <font size="5">**Don't give up!**</font>. We will continue our <font size="4" color="brown">academic</font> pursuits and mentally taxing <font size="4" color="brown">science</font> work in Lougheed Lab at Queen's University. We decided today is the day, to actually do some <font size="4" color="blue">R</font> work. Follow **Hayden** and **Ying** and do today's **brain exercise**. We will go through:  
+
+
+- Section 1: R basics
+- Section 2: Data simulation 
+- Section 3: Power analysis 
+- Section 4: Estimation statistics
+- Section 5: Data visulization 
+
+We have a real <font size="4" color="orange">biological question</font> to be solved: 
+
+- Has frog mortality changed in current COVID-19 situation in Ontario compared to before the pandemic?
+
+We raised two <font size="4" color="orange">hypotheses</font>: 
+
+- H0: It does not change.
+- H1: Frog mortality rate decreases with decreasing traffic under Ontario lockdown. 
+
+<font size="4" color="blue">R</font>eady?
+
+![<font size="4" color="gray">*You are my rock! Love from Lougheed Lab. Photo by La Vita E Bella.*</font>](IMG_6184.JPG)
+
+
+<p>&nbsp;</p>
+
+## Section 1: R Basics
+1. how to make a project
+2. markdown vs script
+3. github links
+4. handling error messages 
+        (googling answers)
+5. other helpful links 
+    + Quick-R: https://www.statmethods.net/index.html 
+    + ggplot2: https://learnr.wordpress.com 
+6. packages
+    + You need to install: pwr, ggplot2, dplyr, knitr, kableExtra, dabestr
+
+
+<p>&nbsp;</p>
+
+## Section 2: Data simulation
+1. how to generate a "fake" data set
+
+  -(Frog mortality, frog species (3), location (3), sampling year (2010-2020), Total number of cars per day)
+  -generate date for each year separately, then can change number of cars for this year specifically, 
+  -combine the data from different years into one data frame
+  -start with 1 species and 1 location, add more in if you can later
+  
+```{r}
+
+# a pool to draw mean mortality rate and mean number of car per day 
+mor_mean_pool <- rnorm(n=10, mean=25, sd=1)
+car_mean_pool <- rnorm(n=10, mean=50, sd=1)
+# a dataset to store the data 
+year <- NA
+location <- NA
+species <- NA
+frog_mort <- NA
+car_num <- NA
+dat_all <- data.frame(frog_mort, car_num,year, location, species)
+
+loc_all <- c("Site A", "Site B", "Site C")
+
+for (j in 1:3){ # a loop to get location 
+  loc <- loc_all[j]
+  
+for (i in seq(2010,2019,1)){ # generate the data for 2010 to 2019 (before pandemic)
+  mean_mor <- sample(mor_mean_pool, 1) 
+  mean_car <- sample(car_mean_pool, 1)
+  
+  frog_mort <- rnorm(n=3, mean=mean_mor, sd=1)
+  frog_mort <- sort(frog_mort) # smaller values at the beginning
+  
+  car_num <- rnorm(n=3, mean=mean_car, sd=8)
+  car_num <- sort(car_num)
+  
+# Assign cars to frog mortality in a dataset
+  dat <- data.frame(frog_mort, car_num) # small cars have small frog mortality 
+  dat$year <- rep(i,3) # add year to the dataset 
+  dat$location <- rep(loc,3) # add location to the dataset 
+  dat$species <- sample(c("Rana clamitans", "Pseudacris crucifer", "Lithobates pipiens"),3,FALSE) # add species to the dataset 
+  
+  dat_all <- rbind(dat_all, dat)
+  
+  print(i)
+}
+print(j)
+}
+
+# Now to generate the data for 2020
+loc_all <- c("Site A", "Site B", "Site C")
+for (j in 1:3){ # a loop to get location 
+  loc <- loc_all[j]
+  
+  frog_mort <- rnorm(n=3, mean=15, sd=1)
+  frog_mort <- sort(frog_mort) # smaller values at the beginning
+  
+  car_num <- rnorm(n=3, mean=20, sd=8)
+  car_num <- sort(car_num)
+  
+# Assign cars to frog mortality in a dataset
+  dat <- data.frame(frog_mort, car_num) # small cars have small frog mortality 
+  dat$year <- rep(2020,3) # add year to the dataset 
+  dat$location <- rep(loc,3) # add location to the dataset 
+  dat$species <- sample(c("Rana clamitans", "Pseudacris crucifer", "Lithobates pipiens"), 3, FALSE)# add species to the dataset 
+  
+  dat_all <- rbind(dat_all, dat)
+  
+print(c("2020", j))
+}
+
+dat_all <- dat_all[-1,] # delete the first NA row. We can also use package dplyr to filter rows with NA. 
+```
+
+Alternatively, We can make the data this way...
+
+
+```{r}
+
+set.seed(911)
+
+N <- 90
+frog_mort <- rnorm(N, mean=26, sd=1)
+car_num <- rnorm(N, mean=50, sd=8)
+location <- c(rep("Site 1",N/3), rep("Site 2",N/3), rep("Site 3",N/3))
+year <- rep(c(rep(2010, N/30),
+          rep(2011, N/30),
+          rep(2012, N/30),
+          rep(2013, N/30),
+          rep(2014, N/30),
+          rep(2015, N/30),
+          rep(2016, N/30),
+          rep(2017, N/30),
+          rep(2018, N/30),
+          rep(2019, N/30)),3)
+species <- rep(c("species 1","species 2","species 3"),30)
+dat_all2 <- 
+  tibble::tibble(
+    frog_mort=frog_mort,
+    car_num=car_num,
+    location =location ,
+    year=year,
+    species=species
+  )
+#generating 2020 data and then merging it with previous data set
+loc_all2 <- c("Site 1", "Site 2", "Site 3")
+for (j in 1:3){ # a loop to get location 
+  loc <- loc_all2[j]
+  
+  frog_mort <- rnorm(n=3, mean=15, sd=1)
+  frog_mort <- sort(frog_mort) # smaller values at the beginning
+  
+
+  car_num <- rnorm(n=3, mean=20, sd=8)
+  car_num <- sort(car_num)
+  
+# Assign cars to frog mortality in a dataset
+  dat2 <- data.frame(frog_mort, car_num) # small cars have small frog mortality 
+  dat2$year <- rep(2020,3) # add year to the dataset 
+  dat2$location <- rep(loc,3) # add location to the dataset 
+  dat2$species <- c("Species A", "Species B", "Species C") # add species to the dataset 
+  
+#now we merge the data sets to gerneate our final full data set
+  
+  dat_all2 <- rbind(dat_all2, dat2)
+}
+```
+  
+  
+  
+2. how to export the data set
+
+It may be useful, from time to time, to be able to save your data set that was created in R. To do this we simply can use the 'write.csv()' command as shown bellow for the first data set we created. 
+
+```{r}
+write.csv(dat_all, 'FrogPandemic.csv')
+write.csv(dat_all2, 'FrogPandemic2.csv')
+```
+
+
+
+
+
+
+
+<p>&nbsp;</p>
+
+## Section 3. Power analysis
+#### 3.1 What is power analysis? 
+
+<font size="2" color="red"> *The following materials are prepared by Ying upon her understanding, which means they can be flawed.* </font> 
+
+<font size="2" color="red"> *Ying highly recommends you to read authoritative books and papers for learning. Here are some:* </font> 
+
+- <font size="2" color="gray">*Cohen, J. 1988. Statistical Power Analysis for the Behavioral Sciences, Second Edition. Hillsdale, New Jersey: Lawrence Erlbaum Associates.*</font>
+- <font size="2" color="gray">*Murphy, K. R. and Myors, B. 2004. Statistical Power Analysis: A Simple and General Model for Traditional and Modern Hypothesis Tests. Mahwah, New Jersey:  Lawrence Erlbaum Associates.*</font>
+- <font size="2" color="gray">*Sedlmeier, P. and Gigerenzer, G. 1989. Do Studies of Statistical Power Have an Effect on the Power of Studies?  Psychological Bulletin, 105(2), 309-316.*</font>
+- <font size="2" color="gray">*Hoenig, J.M., and D. M. Heisey. 2001. The Abuse of Power: The Pervasive Fallacy of Power Calculations for Data Analysis. The American Statistician, 55(1): 19-24.*</font>
+- <font size="2" color="gray">*Levine, M., and Ensom M. H. H. 2001. Post Hoc Power Analysis: An Idea Whose Time Has Passed?  Pharmacotherapy, 21(4), 405-409.*</font>
+
+
+
+<p>&nbsp;</p>
+**Statistical power** is the probability that the test correctly rejects the null hypothesis.
+
+- Power = Pr (Reject H0 | H1 is true) = 1 - Type II error rate
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+# How to make a nice table? Please check: https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html 
+
+library(knitr)
+library(kableExtra)
+
+PAcol1 <- c("", "Null hypothesis H0 is true", "Alternative hypothesis H1 is ture")
+PAcol2 <- c("Fail to reject H0", "Correct", "Type II error")
+PAcol3 <- c("Reject H0", "Type I error", "Correct. Power")
+PAtable <- data.frame(PAcol1, PAcol2, PAcol3)
+colnames(PAtable) <- NULL
+
+kable(PAtable, caption="Table 1. Hypothesis testing.") %>%
+  kable_styling(c("striped", "hover"), full_width = FALSE, position = "left")
+```
+
+
+Let's visualize the hypothesis testing using a Z test on the population mean. A z-test is a statistical test used to determine whether two population means are different when the variances are known and the sample size is large (over 30).
+
+H0: μ = 24. The true population mean frog mortality rate from Lake Opinicon is 24%. 
+
+H1: μ < 24. The true population mean is smaller than 24%. 
+
+The curve is the sampling distribution of sample mean $\bar{x}$ when the null hypothesis is true. Recall that $\bar{x} = \frac{1}{n} \sum_{i=1}^n x_i$. If your sample mean falls in the blue region that is smaller than 22.35, then you reject your hypothesis as your alpha value is set to 0.05. 
+
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+curve(dnorm(x,24,1), xlim=c(20,28), main="Normal density",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+axis(1,at=c(20,21,22,23,24,25,26,27,28))
+
+# define shaded region
+from.z <- 20
+to.z <- qnorm(.05,mean=24,sd=1)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,1), 0)
+polygon(S.x,S.y, col="blue",border=NA)
+
+text(x=21,y=0.1,labels=expression(paste(alpha, "=0.05")),col="darkblue")
+text(x=25,y=0.37,labels=expression(paste(mu, "=24")),col="darkblue")
+#text(x=22.8,y=0,labels=round(to.z,1))
+abline(v=to.z,lty="dashed")
+arrows(21,0.08,21.8,0.04)
+text(x=21,y=0.2,labels="Reject H0")
+text(x=24,y=0.2,labels="Do not reject H0")
+```
+
+
+Let's look at a curve when the alternative hypothesis is true. 
+
+H1: μ < 24. The true population mean is smaller than 24%. 
+
+The turquoise curve is the sampling distribution of sample mean $\bar{x}$ when the alternative hypothesis is true (μ = 23). The power (turquoise area) is the probability of rejecting H0 if the true mean is 23. 
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+curve(dnorm(x,24,1), xlim=c(20,28), main="Normal density",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,1),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(20,21,22,23,24,25,26,27,28))
+
+# define shaded region
+from.z <- 20
+to.z <- qnorm(.05,mean=24,sd=1)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,1), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,1), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+
+text(x=25,y=0.37,labels=expression(paste(mu, "=24")),col="darkblue")
+text(x=24.2,y=0.3,labels=expression(paste(mu, "=23")),col="turquoise")
+text(x=21.8,y=0.37,labels=expression(paste(alpha, "=0.05")))
+abline(v=to.z,lty="dashed")
+arrows(21,0.2,21.2,0.14)
+text(x=21,y=0.23,labels="Power",size=5)
+```
+
+
+
+Power depends on:
+
+- **Alpha level** = significance level = Type I error rate. Larger alpha, greater power.
+    + Pr (observed | H0 is ture) < alpha, reject null 
+    + Pr (observed | H0 is ture) > alpha, fail to reject null 
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+curve(dnorm(x,24,1), xlim=c(20,28), main="Normal density",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,1),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(20,21,22,23,24,25,26,27,28))
+
+# define shaded region
+from.z <- 20
+to.z <- qnorm(.01,mean=24,sd=1)
+to.z1 <- qnorm(.05,mean=24,sd=1)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,1), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,1), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+
+text(x=25,y=0.37,labels=expression(paste(mu, "=24")),col="darkblue")
+text(x=24.2,y=0.3,labels=expression(paste(mu, "<24")),col="turquoise")
+abline(v=to.z,lty="dashed")
+text(x=21,y=0.37,labels=expression(paste(alpha, "=0.01")))
+abline(v=to.z1,lty="dashed")
+text(x=22.3,y=0.39,labels=expression(paste(alpha, "=0.05")))
+#arrows(21,0.2,21.2,0.14)
+#text(x=21,y=0.23,labels="Power",size=5)
+```
+
+
+- **Effect size** - magnitude of the difference between groups. Larger effects, larger power. 
+
+*There are many definitions of the effect size. We will stick with the simplest one, which is the difference of two group means.*
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+curve(dnorm(x,24,1), xlim=c(19,28), ylim=c(0,0.45), main="Normal density",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,22,1),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(19,20,21,22,23,24,25,26,27,28))
+arrows(23,0.42,22,0.42)
+
+# define shaded region
+from.z <- 19
+to.z <- qnorm(.05,mean=24,sd=1)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,1), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),22,1), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+
+curve(dnorm(x,23,1),add=TRUE,lty="dashed")
+
+text(x=25,y=0.37,labels=expression(paste(mu, "=24")),col="darkblue")
+text(x=23,y=0.43,labels=expression(paste(mu, "<24")),col="turquoise")
+text(x=22.9,y=0.04,labels=expression(paste(alpha, "=0.05")))
+abline(v=to.z,lty="dashed")
+```
+
+
+
+
+- **Sample size** - Larger sample size, smaller standard deviation of those distributions, larger statistical power. Recall that $\sigma_\bar{x} = \frac{\sigma}{\sqrt{n}}$. As we increase the sample sizes, the standard deviations $\sigma$ decrease, that is narrower. If you sample the entire population, then your sampling distribution of $\bar{x}$ will be narrow to be one line that is the true population mean. 
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+
+par(mfrow=c(3,1))
+
+# sd=1
+curve(dnorm(x,24,1), xlim=c(15,32),ylim=c(0,0.8), main="Normal density (sd=1)",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,1),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32))
+
+# define shaded region
+from.z <- 15
+to.z <- qnorm(.05,mean=24,sd=1)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,1), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,1), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+
+
+# sd=0.8
+curve(dnorm(x,24,0.8), xlim=c(15,32), ylim=c(0,0.8), main="Normal density (sd=0.8)",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,0.8),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32))
+
+# define shaded region
+from.z <- 15
+to.z <- qnorm(.05,mean=24,sd=0.8)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,0.8), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,0.8), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+
+
+# sd=0.5
+curve(dnorm(x,24,0.5), xlim=c(15,32), ylim=c(0,0.8), main="Normal density (sd=0.5)",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,0.5),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32))
+
+# define shaded region
+from.z <- 15
+to.z <- qnorm(.05,mean=24,sd=0.5)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,0.5), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,0.5), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+```
+
+
+- **Your purpose** - For example, one might want to see if the regression coefficient is different from zero, while the other wants to get a very precise estimate of the regression coefficient with a very small confidence interval around it. This second purpose requires a larger sample size than does merely seeing if the regression coefficient is different from zero. 
+
+**A power analysis = study plan**
+
+- Estimate the "minimum" sample size. For example, how many locations (sample size) do we need to detect the frog mortality decrease of 10% (effect size) from 2019 to 2020 if I want to have a statistical power of 80% and a significance level of 0.05?
+
+- Note: Post-experiment power calculations should <font size="2" color="red"> **NOT**</font> be used to aid in the interpretation of the experimental results. Details see (Hoenig and Heisey 2001).
+
+**Limitations of power analysis:** 
+
+- Only a plan. A standard power analysis gives you a “best case scenario” estimate of the necessary number of subjects needed to detect the effect. In most cases, this “best case scenario” is based on assumptions and educated guesses. If any of these assumptions or guesses are incorrect, you may have less power than you need to detect the effect. "Minimum" is not the minimum. **You want to add a few more to give yourself some "wiggle-room" just in case.**
+
+
+
+
+<p>&nbsp;</p>
+
+#### 3.2 How to do power analysis?
+
+**Example 1**
+
+Recall our research question: Has frog mortality changed in current COVID-19 situation in Ontario compared to before?
+
+1. Null hypothesis: the mean frog mortality in Ontario in 2019 and 2020 is the same.
+
+2. Statistical test: paired t-test (because two sample sets are the same subjects but two measurements of mortality). 
+Null hypothesis: the true mean difference is zero. 
+Assumptions: 
+    - The dependent variable must be continuous (interval/ratio).
+    - The observations are independent of one another.
+    - The dependent variable should be approximately normally distributed.
+    - The dependent variable should not contain any outliers.
+
+
+3. Chose your effect size, alpha, power
+    - Effect size: Do a literature review, a pilot study and using Cohen's recommendations. Here is Cohen's recommendations for the effect size: 
+        + Small effect:  1% of the variance; d = 0.2 (too small to detect other than statistically) 
+        + Medium effect:  6% of the variance; d = 0.5 (apparent with careful observation)
+        + Large effect: at least 15% of the variance; d = 0.8 (apparent with a superficial glance; unlikely to be the focus of research because it is too obvious)
+    - Alpha: 0.05, 0.01, etc.
+    - Power: 0.8-0.9 are commonly used 
+
+4. Coding.
+
+
+
+
+**Manual coding** 
+
+The general idea: 
+
+- Decide your statistical analyses. 
+- Get your null and alternative distribution (decided by your **effect size**). 
+- Shade the signficance region (decided by your **alpha value**). 
+- Based on the area of your **power**, you calculate the standard deviation and your **sample size**.
+
+
+We recommend you to read *Statistical Power Analysis for the Behavioral Sciences* by Cohen if you are interested in the detailed calculation process. Here is a small tutorial on the t-test to give you some flavors: https://www.cyclismo.org/tutorial/R/power.html#calculating-many-powers-from-a-t-distribution. 
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+# sd=0.8
+curve(dnorm(x,24,0.8), xlim=c(18,28), ylim=c(0,0.8), main="Normal density (sd=0.8)",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,0.8),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(18,19,20,21,22,23,24,25,26,27,28))
+
+# define shaded region
+from.z <- 18
+to.z <- qnorm(.05,mean=24,sd=0.8)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,0.8), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,0.8), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+
+
+# sd=0.5
+curve(dnorm(x,24,0.5), xlim=c(18,28), ylim=c(0,0.8), main="Normal density (sd=0.5)",axes=FALSE,xlab="",ylab="",col="blue",lwd=5)
+curve(dnorm(x,23,0.5),add=TRUE,col="turquoise",lwd=5)
+axis(1,at=c(18,19,20,21,22,23,24,25,26,27,28))
+
+# define shaded region
+from.z <- 18
+to.z <- qnorm(.05,mean=24,sd=0.5)
+
+S.x  <- c(from.z, seq(from.z, to.z, 0.01), to.z)
+S.y1  <- c(0, dnorm(seq(from.z, to.z, 0.01),24,0.5), 0)
+S.y2  <- c(0, dnorm(seq(from.z, to.z, 0.01),23,0.5), 0)
+polygon(S.x,S.y2, col="turquoise",border=NA)
+polygon(S.x,S.y1, col="blue",border=NA)
+```
+
+
+
+**Package pwr:**
+
+- Official release on CRAN: http://cran.r-project.org/web/packages/pwr/ 
+- Github link: https://github.com/heliosdrm/pwr
+
+
+```{r}
+library(pwr)
+# 1. small effect size, alpha at 0.05, power at 0.8
+# n is the sample size, d is the effect size, Cohen's d = mean/SD for paired t-test, sig.level is alpha, type indicates a two-sample t-test, one-sample t-test or paired t-test, alternative hypothesis is two.sided (default)
+pwr.t.test(d = 0.2, sig.level = 0.05, power = 0.8, type = c("paired"),alternative="two.sided")
+
+# 2. small effect size, alpha at 0.01, power at 0.8
+pwr.t.test(d = 0.2, sig.level = 0.01, power = 0.8, type = c("paired"),alternative="two.sided")
+
+# 3. small effect size, alpha at 0.01, power at 0.9
+pwr.t.test(d = 0.2, sig.level = 0.01, power = 0.9, type = c("paired"),alternative="two.sided")
+
+# 4. medium effect size, alpha at 0.05, power at 0.8
+pwr.t.test(d = 0.5, sig.level = 0.05, power = 0.8, type = c("paired"),alternative="two.sided")
+```
+
+Now let's visualize how power change with sample size. 
+
+```{r,echo=FALSE}
+# plot color names: https://www.maplesoft.com/support/help/Maple/view.aspx?path=plot/colornames 
+samplesizes <- seq(from=10,to=300,by=10)
+power.samplesizes <- pwr.t.test(n=samplesizes,sig.level=0.05,d=0.2,type=c("paired"),alternative="two.sided")$power
+plot(samplesizes,
+     power.samplesizes,
+     xlim=c(0,300),
+     xlab="Sample size",
+     ylab="Expected power",
+     ylim=c(0,1),
+     type="b",
+     col="darkorange",
+     lwd=5,axes=FALSE)
+axis(1,at=c(0,50,100,150,200,250,300))
+axis(2,at=c(0,0.25,0.5,0.75,1),labels=paste(c(0,25,50,75,100),"%"))
+text(x=50,y=0.9,labels="sig.level=0.05",col="darkblue")
+text(x=50,y=0.8,labels="effect.size=0.2",col="darkblue")
+```
+
+Now let's visualize how sample size changes with effect size. 
+
+```{r,echo=FALSE}
+effectsizes <- seq(from=0.1,to=0.9,by=0.1)
+samplesize.effectsizes.08 <-sapply(effectsizes, function(d){pwr.t.test(sig.level=0.05,d=d,power=0.8,type=c("paired"),alternative="two.sided")$n}) # We use sapply because pwr.t.test doesn't know how to deal with a sequence of effect sizes 
+samplesize.effectsizes.09 <-sapply(effectsizes, function(d){pwr.t.test(sig.level=0.05,d=d,power=0.9,type=c("paired"),alternative="two.sided")$n})
+plot(effectsizes,
+     samplesize.effectsizes.08,
+     xlim=c(0,1),
+     xlab="Effect size",
+     ylab="Required sample size",
+     type="b",
+     col="darkblue",
+     lwd=5,axes=FALSE)
+lines(effectsizes,samplesize.effectsizes.09,col="turquoise",lwd=5,type="b")
+axis(1,at=c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1))
+axis(2,at=c(1000,500,350,100,50,10,0))
+legend(x="topright",lwd=5,bty="n",legend=c("power=0.8","power=0.9"),col=c("darkblue","turquoise"))
+text(x=0.9,y=650,labels="sig.level=0.05",col="darkorange")
+```
+
+
+
+<p>&nbsp;</p>
+**Example 2**
+
+Recall our research question: Has frog mortality changed in current COVID-19 situation in Ontario compared to before?
+
+1. Null hypothesis: the frog mortality rate does not correlate with traffic in Ontario (correlation coefficient r=0).
+Alternative hypothesis: the frog mortality rate increase with traffic in Ontario (correlation coefficient r>0).
+
+2. Statistical analysis: correlation test. Null hypothesis is the true population correlation coefficient is 0. Assumptions: 
+    - Both variables should be normally distributed. 
+    - Both variables are continous (interval or ratio). 
+    - Two vairables are linearly related.
+
+3. Decide on the effect size (or a range of effect sizes), significance level (alpha), and power.
+    - small effect size, alpha at 2, power at 0.8 
+    - small effect size, alpha at 0.01, power at 0.8
+    - medium effect size, alpha at 0.05, power at 0.9 
+
+4. Coding.
+
+
+```{r}
+# n is the sample size and r is the Linear correlation coefficient, notice our alternative is greater
+pwr.r.test(r = 0.2, sig.level = 0.05, power = 0.8, alternative="greater")
+
+pwr.r.test(r = 0.2, sig.level = 0.01, power = 0.8, alternative="greater")
+
+pwr.r.test(r = 0.35, sig.level = 0.05, power = 0.8, alternative="greater")
+```
+
+
+<p>&nbsp;</p>
+**Other tests**
+
+- Two sample t tests: pwr.2p.test 
+- Two proportions: pwr.2p2n.test
+- Balanced one-way analysis of variance tests: pwr.anova.test
+- Chi-squared tests: pwr.chisq.test
+- **The general linear model: pwr.f2.test**
+- The mean of a normal distribution (known variance): pwr.norm.test
+- Proportion tests (one sample): pwr.p.test
+- Two samples (different sizes) t-tests of means: pwr.t2n.test
+
+
+
+<p>&nbsp;</p>
+<font size="3" color="cornflowerBlue">*Challenge time!*</font>
+
+<font size="3">*In reality, one would expect frog mortality is affected by many factors, such as predation and climate. Thus one would expect the mean mortality rate changes across years. That is to say, with or without the pandemic frog mortality rate might change in 2020 as an usual pattern. We are interested in whether frog mortality change unusually in 2020 compared to the past 10 years and if so, whether it is because of the pandemic lockdown. *</font>
+
+<font size="3">*We raised a hypothesis that frog mortality rate change in 2020 deviates from the changing pattern in the past 10 years.*</font> 
+
+<font size="3">*1. Do you think this is a good hypothesis?*</font>
+
+<font size="3">*2. What is the statistical test? No package availble for it?!*</font>
+
+<font size="3" color="violet">*3. Alternatives?*</font>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
