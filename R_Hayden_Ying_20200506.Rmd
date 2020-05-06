@@ -26,7 +26,7 @@ library(knitr)
 
 ## Preface
 
-Welcome back my friends! 
+Welcome back my friends! We are happy to see you!
 
 This week's rocking message is <font size="5">**Smile!**</font>. 
 
